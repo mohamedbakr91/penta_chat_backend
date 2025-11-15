@@ -7,7 +7,7 @@ export class FindMyFriendshipsDTO extends PaginatedDTO {
 
   @ApiProperty({
     enum: FriendshipStatus,
-    enumName: 'FriendshipStatus', // اسم Enum للتوثيق في Swagger
+    enumName: 'FriendshipStatus',
     description: 'List my friendships',
   })
   status: FriendshipStatus;

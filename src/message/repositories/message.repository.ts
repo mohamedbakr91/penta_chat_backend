@@ -6,6 +6,8 @@ import { CreateMessageDto } from '../dto/create-message.dto';
 import { UpdateMessageDto } from '../dto/update-message.dto';
 import { MessageDTO } from '../dto/message.dto';
 import { Message } from '../entities/message.entity';
+import { FindAllGroupMessagesDTO } from '../dto/find-all-group-messages';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class MessageRepository {
@@ -27,6 +29,31 @@ export class MessageRepository {
     const { rows: data, count } = await this.model.findAndCountAll({
       limit: paginate.getLimit(),
       offset: paginate.getOffset(),
+    });
+
+    return {
+      data: data.map((item) => item.toJSON()),
+      meta: paginate.getMetaData(count),
+    };
+  }
+
+  async fillAllGroupMessages(
+    query: FindAllGroupMessagesDTO,
+  ): Promise<IPaginatedResponse<MessageDTO>> {
+    const paginate = new Pagination(query.page, query.limit);
+
+    const { rows: data, count } = await this.model.findAndCountAll({
+      limit: paginate.getLimit(),
+      offset: paginate.getOffset(),
+      where: { groupId: query.groupId },
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'username', 'avatar'],
+        },
+      ],
     });
 
     return {

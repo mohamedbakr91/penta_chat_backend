@@ -15,6 +15,31 @@ export class WebsocketService {
   setServer(server: WSServer) {
     this.server = server;
   }
+  emitToUser(userId: number, event: string, data: any) {
+    try {
+      const userRoom = `user_${userId}`;
+      this.server.to(userRoom).emit(event, data);
+    } catch (error) {
+      this.logger.error(`Failed to emit to user ${userId}: ${error.message}`);
+    }
+  }
+
+  emitToGroup(groupId: number, event: string, data: any) {
+    try {
+      const groupRoom = `group_${groupId}`;
+      this.server.to(groupRoom).emit(event, data);
+    } catch (error) {
+      this.logger.error(`Failed to emit to group ${groupId}: ${error.message}`);
+    }
+  }
+
+  isUserConnected(userId: number): boolean {
+    const userRoom = `user_${userId}`;
+    const roomSockets = this.server.sockets.adapter.rooms.get(userRoom);
+    return roomSockets && roomSockets.size > 0;
+  }
+
+  // webSocket.dto.ts
 
   emitEventToRoom<T>({ event, room, data }: EmitEventToRoomDto<T>) {
     try {

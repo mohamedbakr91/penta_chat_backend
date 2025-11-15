@@ -22,13 +22,6 @@ export class MessageDTO {
   senderId: number;
 
   @ApiProperty({
-    description: 'The recipient user ID',
-    example: 2,
-    required: false,
-  })
-  recipientId?: number;
-
-  @ApiProperty({
     description: 'The group ID associated with the message',
     example: 5,
     required: false,

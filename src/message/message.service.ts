@@ -10,6 +10,7 @@ import { UpdateMessageDto } from './dto/update-message.dto';
 import { MessageDTO } from './dto/message.dto';
 import { MessageRepository } from './repositories/message.repository';
 import { Transaction } from 'sequelize';
+import { FindAllGroupMessagesDTO } from './dto/find-all-group-messages';
 
 @Injectable()
 export class MessageService {
@@ -22,7 +23,7 @@ export class MessageService {
 
   async create(
     data: CreateMessageDto,
-    transaction: Transaction,
+    transaction?: Transaction,
   ): Promise<MessageDTO> {
     try {
       const message = await this.repository.create(data, transaction);
@@ -45,6 +46,11 @@ export class MessageService {
     return await this.repository.findAll(page, limit);
   }
 
+  async getLastMessages(
+    query: FindAllGroupMessagesDTO,
+  ): Promise<IPaginatedResponse<MessageDTO>> {
+    return await this.repository.fillAllGroupMessages(query);
+  }
   async findOne(id: number): Promise<MessageDTO> {
     const message = await this.repository.findOne(id);
     if (!message) {

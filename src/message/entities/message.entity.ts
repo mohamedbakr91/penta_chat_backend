@@ -29,13 +29,10 @@ export class Message extends Model<Message> {
   @ForeignKey(() => Project)
   @Column({ allowNull: true })
   projectId?: number;
+
   @ForeignKey(() => User)
   @Column
   senderId: number;
-
-  @ForeignKey(() => User)
-  @Column({ allowNull: true })
-  recipientId: number;
 
   @ForeignKey(() => Group)
   @Column({ allowNull: true })
@@ -60,9 +57,6 @@ export class Message extends Model<Message> {
 
   @BelongsTo(() => User, 'senderId')
   sender: User;
-
-  @BelongsTo(() => User, 'recipientId')
-  recipient?: User;
 
   @CreatedAt
   createdAt: Date;

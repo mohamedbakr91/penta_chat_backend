@@ -6,7 +6,7 @@ import { ServerOptions } from 'socket.io';
 
 export class RedisIoAdapter extends IoAdapter {
   private readonly logger = new Logger(RedisIoAdapter.name);
-
+  private pubClient;
   private adapterConstructor: ReturnType<typeof createAdapter>;
 
   async connectToRedis(): Promise<void> {
@@ -40,5 +40,14 @@ export class RedisIoAdapter extends IoAdapter {
     const server = super.createIOServer(port, options);
     server.adapter(this.adapterConstructor);
     return server;
+  }
+
+  getClient() {
+    if (!this.pubClient) {
+      throw new Error(
+        'Redis client not initialized. Call connectToRedis first.',
+      );
+    }
+    return this.pubClient;
   }
 }
