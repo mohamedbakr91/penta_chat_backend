@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { AttachmentType } from '../entities/message.entity';
+import { AttachmentType, MessageType } from '../entities/message.entity';
 
 export class CreateMessageDto {
   @ApiProperty({
@@ -50,6 +50,14 @@ export class CreateMessageDto {
     example: AttachmentType.IMAGE,
     required: false,
   })
+  @ApiProperty({
+    description: 'The type of message',
+    enum: MessageType,
+    example: MessageType.IMAGE,
+    required: true,
+  })
+  messageType: MessageType;
+
   @IsOptional()
   @IsEnum(AttachmentType)
   attachmentType?: AttachmentType;

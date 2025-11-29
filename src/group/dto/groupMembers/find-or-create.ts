@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
-import { GroupRole } from '../entities/group-member.entity';
+import { GroupRole } from '../../entities/group-member.entity';
 
 export class findOrCreateMemberDto {
   @ApiProperty({

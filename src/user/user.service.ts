@@ -13,6 +13,7 @@ import { FindAllUsersDTO } from './dto/list-users.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import { UserDTO } from './dto/user.dto';
 import { UserRepository } from './repositories/user.repository';
+import { GeneratorHelper } from 'src/shared/helpers/generator';
 
 @Injectable()
 export class UserService {
@@ -26,13 +27,31 @@ export class UserService {
     data: CreateUserDTO,
     transaction?: Transaction,
   ): Promise<UserDTO | null> {
+    if (!data.userName) {
+      throw new BadRequestException('User name is required');
+    }
+
+    if (!data.projectId) {
+      throw new BadRequestException(
+        `Project ID is required for user: ${data.userName}`,
+      );
+    }
+
     const foundUserName = await this.repository.findByUsernameAndProject(
       data.userName,
       data.projectId,
+      transaction,
     );
 
     if (foundUserName) return foundUserName;
-    const user = await this.repository.create(data, transaction);
+
+    // Generate userSecretKey if not provided
+    const userSecretKey =
+      data.userSecretKey || GeneratorHelper.generateRandomAlphaNumeric(15);
+    const user = await this.repository.create(
+      { ...data, userSecretKey },
+      transaction,
+    );
 
     this.logger.log(`User created successfully: ${user.id}`);
 

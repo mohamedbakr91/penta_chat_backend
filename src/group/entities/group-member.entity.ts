@@ -10,6 +10,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { Group } from 'src/group/entities/group.entity';
+import { Message } from 'src/message/entities/message.entity';
 import { User } from 'src/user/entities/user.entity';
 
 @Table({ tableName: 'group_members', timestamps: true })
@@ -30,6 +31,11 @@ export class GroupMember extends Model<GroupMember> {
   @Column
   role: GroupRole;
 
+  @ForeignKey(() => Message)
+  lastSeenMessageId: number;
+
+  @Column({ allowNull: true })
+  lastSeenAt: Date;
   @CreatedAt
   createdAt: Date;
 

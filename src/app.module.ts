@@ -1,6 +1,7 @@
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DatabaseModule } from './database/database.module';
 import { SharedModule } from './shared/module/shared.module';
 import { FilesModule } from './files/files.module';
@@ -14,7 +15,6 @@ import { redisStore } from 'cache-manager-redis-store';
 import { GroupModule } from './group/group.module';
 import { ProjectModule } from './project/project.module';
 import { ChatServiceModule } from './chat-service/chat-service.module';
-import { GroupMembersModule } from './group-members/group-members.module';
 import configuration from './config/configuration';
 import { ClsModule } from 'nestjs-cls';
 import { MessageModule } from './message/message.module';
@@ -24,20 +24,15 @@ import { MessageModule } from './message/message.module';
     CacheModule.registerAsync({
       isGlobal: true,
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        isGlobal: true,
-        max: 10_000,
-        store: (): any =>
-          redisStore({
-            database: configService.get('redisDB'),
-            commandsQueueMaxLength: 10_000,
-            password: configService.get('redisPassword'),
-            username: configService.get('redisUserName'),
-            socket: {
-              host: configService.get('redisHost'),
-              port: configService.get('redisPort'),
-            },
-          }),
+      useFactory: async (config: ConfigService) => ({
+        store: await redisStore({
+          host: config.get('redisHost') || '127.0.0.1',
+          port: config.get('redisPort') || 6379,
+          username: config.get('redisUserName'),
+          password: config.get('redisPassword'),
+          db: config.get('redisDB') || 0,
+        }),
+        // ttl: 60 * 60, // default TTL (اختياري)
       }),
     }),
     ConfigModule.forRoot({
@@ -51,6 +46,7 @@ import { MessageModule } from './message/message.module';
       },
       global: true,
     }),
+    EventEmitterModule.forRoot(),
     HttpModule,
     DatabaseModule,
     SharedModule,
@@ -58,7 +54,6 @@ import { MessageModule } from './message/message.module';
     HealthModule,
     UserModule,
     GroupModule,
-    GroupMembersModule,
     ChatServiceModule,
     ProjectModule,
     MessageModule,

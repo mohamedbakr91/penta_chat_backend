@@ -33,7 +33,7 @@ export class AuthHelper {
 
     return this.jwtService.signAsync<UserTokenPayload>(payload, {
       secret: this.configService.get<string>('jwtSecret'),
-      expiresIn: expiresIn as any, // <-- cast هنا
+      expiresIn: expiresIn as any,
     });
   }
 

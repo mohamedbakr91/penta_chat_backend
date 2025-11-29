@@ -45,9 +45,11 @@ export class UserRepository {
   async findByUsernameAndProject(
     userName: string,
     projectId: number,
+    transaction?: Transaction,
   ): Promise<UserDTO | null> {
     const user = await this.model.findOne({
       where: { userName, projectId },
+      transaction,
     });
 
     return user ? user.toJSON() : null;

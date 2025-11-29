@@ -24,16 +24,16 @@ import { AuthGuard } from 'src/auth/guards/jwt.guard';
 @UsePipes(new ValidationPipe({ transform: true }))
 export class ChatServiceController {
   constructor(private readonly chatService: ChatService) {}
-  @ApiOperation({ summary: 'Create Account' })
-  @UseGuards(AuthGuard)
-  @ApiBody({ type: ServiceIntegrationDTO })
-  @ApiResponse({ type: 'string' })
-  @Post()
-  async create(
-    @Body() data: ServiceIntegrationDTO,
-  ): Promise<{ message: string }> {
-    return await this.chatService.integrateService(data);
-  }
+  // @ApiOperation({ summary: 'Create Account' })
+  // @UseGuards(AuthGuard)
+  // @ApiBody({ type: ServiceIntegrationDTO })
+  // @ApiResponse({ type: 'string' })
+  // @Post()
+  // async create(
+  //   @Body() data: ServiceIntegrationDTO,
+  // ): Promise<{ message: string }> {
+  //   return await this.chatService.integrateService(data);
+  // }
   // @Get()
   // findAll() {
   //   return this.chatService.findAll();

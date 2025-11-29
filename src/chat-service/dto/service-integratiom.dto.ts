@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
-import { GroupRole } from 'src/group-members/entities/group-member.entity';
+import { GroupRole } from 'src/group/entities/group-member.entity';
 export class ServiceIntegrationDTO {
   key: string;
   data: GroupData[];

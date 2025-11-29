@@ -9,7 +9,7 @@ import {
   HasMany,
   ForeignKey,
 } from 'sequelize-typescript';
-import { GroupMember } from 'src/group-members/entities/group-member.entity';
+import { GroupMember } from 'src/group/entities/group-member.entity';
 import { Project } from 'src/project/entities/project.entity';
 
 @Table({ tableName: 'groups', timestamps: true })
@@ -18,6 +18,9 @@ export class Group extends Model<Group> {
   @AutoIncrement
   @Column
   id: number;
+
+  @Column
+  name: string;
 
   @Column({ unique: true })
   key: string;

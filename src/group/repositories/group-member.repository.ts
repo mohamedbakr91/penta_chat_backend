@@ -2,9 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Transaction } from 'sequelize';
 import { IPaginatedResponse } from 'src/shared/interfaces';
 import { Pagination } from 'src/shared/pagination';
-import { CreateGroupMemberDto } from '../dto/create-group-member.dto';
-import { UpdateGroupMemberDto } from '../dto/update-group-member.dto';
-import { GroupMemberDTO } from '../dto/group-member.dto';
+import { CreateGroupMemberDto } from '../dto/groupMembers/create-group-member.dto';
+import { UpdateGroupMemberDto } from '../dto/groupMembers/update-group-member.dto';
+import { GroupMemberDTO } from '../dto/groupMembers/group-member.dto';
 import { GroupMember } from '../entities/group-member.entity';
 import { Group } from 'src/group/entities/group.entity';
 
@@ -21,12 +21,16 @@ export class GroupMemberRepository {
     return (await this.model.create(data, { transaction })).toJSON();
   }
 
-  async findByGroupIdAndUserId(
-    groupId: number,
-    userId: number,
-    transaction?: Transaction,
-  ) {
-    return GroupMember.findOne({
+  async findByGroupIdAndUserId({
+    groupId,
+    userId,
+    transaction,
+  }: {
+    groupId: number;
+    userId: number;
+    transaction?: Transaction;
+  }) {
+    return this.model.findOne({
       where: { groupId, userId },
       include: [
         {
@@ -35,6 +39,7 @@ export class GroupMemberRepository {
           attributes: ['id', 'key', 'projectId'],
         },
       ],
+      transaction,
     });
   }
   async findGroupsByUserId(userId: number): Promise<GroupMemberDTO[]> {
@@ -44,7 +49,7 @@ export class GroupMemberRepository {
         {
           model: Group,
           as: 'group',
-          attributes: ['id', 'key', 'projectId'],
+          attributes: ['id', 'key', 'projectId', 'name'],
         },
       ],
     });

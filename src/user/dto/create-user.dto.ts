@@ -31,23 +31,22 @@ export class CreateUserDTO {
   @IsNotEmpty()
   userName: string;
 
-  @ApiProperty({
-    description: 'The project ID associated with the group',
-    example: 123,
-    required: false,
-  })
-  @IsNotEmpty()
-  @IsNumber()
+  // @ApiProperty({
+  //   description: 'The project ID associated with the group',
+  //   example: 123,
+  //   required: false,
+  // })
+  // @IsNotEmpty()
+  // @IsNumber()
   projectId: number;
 
-  @ApiProperty({
-    description: 'The secretKey of TheUser',
-    example: 123,
-    required: false,
+  @ApiPropertyOptional({
+    description: 'The secretKey of TheUser (will be generated if not provided)',
+    example: 'abc123xyz',
   })
-  @IsNotEmpty()
-  @IsNumber()
-  userSecretKey: string;
+  @IsOptional()
+  @IsString()
+  userSecretKey?: string;
 
   @ApiProperty({
     description: 'The project ID of user in other system',

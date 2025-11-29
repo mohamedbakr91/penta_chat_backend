@@ -3,14 +3,14 @@ import {
   Inject,
   Injectable,
   Logger,
-  UnauthorizedException,
 } from '@nestjs/common';
+import { UniqueConstraintError } from 'sequelize';
 import { IPaginatedResponse } from 'src/shared/interfaces';
-import { CreateGroupMemberDto } from './dto/create-group-member.dto';
-import { UpdateGroupMemberDto } from './dto/update-group-member.dto';
-import { GroupMemberDTO } from './dto/group-member.dto';
+import { CreateGroupMemberDto } from './dto/groupMembers/create-group-member.dto';
+import { UpdateGroupMemberDto } from './dto/groupMembers/update-group-member.dto';
+import { GroupMemberDTO } from './dto/groupMembers/group-member.dto';
 import { GroupMemberRepository } from './repositories/group-member.repository';
-import { findOrCreateMemberDto } from './dto/find-or-create';
+import { findOrCreateMemberDto } from './dto/groupMembers/find-or-create';
 import { Transaction } from 'sequelize';
 
 @Injectable()
@@ -59,28 +59,42 @@ export class GroupMembersService {
 
   async findOrCreateMember(
     data: findOrCreateMemberDto,
-    transaction: Transaction,
+    transaction?: Transaction,
   ) {
     const { groupId, userId, role } = data;
 
-    // check if exists
-    const existing = await this.repository.findByGroupIdAndUserId(
-      groupId,
-      userId,
-      transaction,
-    );
+    // Try to create directly to avoid race between check + insert
+    try {
+      const created = await this.repository.create(
+        {
+          groupId,
+          userId,
+          role,
+        },
+        transaction,
+      );
+      return created;
+    } catch (error) {
+      // If another transaction inserted the same (unique constraint), fetch and return it
+      if (
+        error instanceof UniqueConstraintError ||
+        error?.original?.code === 'ER_DUP_ENTRY'
+      ) {
+        const existing = await this.repository.findByGroupIdAndUserId({
+          groupId,
+          userId,
+          transaction,
+        });
+        if (existing) return existing;
+      }
 
-    if (existing) {
-      // already exists → return it
-      return existing;
+      // For lock wait timeout or other DB errors, rethrow to let caller handle rollback/retry
+      this.logger.error(
+        `Error creating group member: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
-
-    // create new
-    return this.repository.create({
-      groupId,
-      userId,
-      role,
-    });
   }
   async update(
     id: number,
@@ -112,10 +126,10 @@ export class GroupMembersService {
     userId: number,
     groupId: number,
   ): Promise<GroupMemberDTO | null> {
-    const userInGroup = await this.repository.findByGroupIdAndUserId(
+    const userInGroup = await this.repository.findByGroupIdAndUserId({
       groupId,
       userId,
-    );
+    });
     return userInGroup ?? null;
   }
 
@@ -126,5 +140,32 @@ export class GroupMembersService {
     }
 
     await this.repository.delete(id);
+  }
+
+  async updateLastSeen(
+    userId: number,
+    groupId: number,
+    lastSeenMessageId: number,
+    lastSeenAt: Date,
+  ): Promise<GroupMemberDTO> {
+    const member = await this.repository.findByGroupIdAndUserId({
+      groupId,
+      userId,
+    });
+
+    if (!member) {
+      throw new BadRequestException('User is not a member of this group');
+    }
+
+    const updatedMember = await this.repository.update(member.id, {
+      lastSeenMessageId,
+      lastSeenAt,
+    });
+
+    if (!updatedMember) {
+      throw new BadRequestException('Failed to update group member');
+    }
+
+    return updatedMember;
   }
 }

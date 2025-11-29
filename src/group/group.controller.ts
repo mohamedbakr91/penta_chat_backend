@@ -1,41 +1,83 @@
 import {
-  Controller,
-  Get,
-  Post,
+  BadRequestException,
   Body,
-  Patch,
+  Controller,
+  DefaultValuePipe,
+  Get,
   Param,
-  Delete,
+  ParseIntPipe,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GroupService } from './group.service';
-import { CreateGroupDto } from './dto/create-group.dto';
-import { UpdateGroupDto } from './dto/update-group.dto';
+import { CreateGroupDto } from './dto/group/create-group.dto';
+import { GroupDTO } from './dto/group/group.dto';
+import { ProjectGuard } from 'src/auth/guards/project.guard';
+import { CurrentProject } from 'src/shared/decorators/currentProject';
+import { AddGroupMembersDto } from './dto/group/add-group-members.dto';
+import { GroupMemberDTO } from './dto/groupMembers/group-member.dto';
+import { IPaginatedResponse } from 'src/shared/interfaces';
 
+import { GroupMembersService } from './group-members.service';
+
+@ApiTags('Group Controller')
 @Controller('group')
+@ApiBearerAuth('JWT')
+@UseGuards(ProjectGuard)
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}
 
   @Post()
-  // create(@Body() createGroupDto: CreateGroupDto) {
-  //   return this.groupService.create(createGroupDto);
-  // }
+  @ApiOperation({ summary: 'Create a new group inside the current project' })
+  @ApiResponse({ type: GroupDTO })
+  async createGroup(
+    @Body() data: CreateGroupDto,
+    @CurrentProject() project: any,
+  ): Promise<GroupDTO> {
+    const payload: CreateGroupDto = {
+      name: data.name,
+      projectId: project.id,
+    };
+    return this.groupService.create(payload);
+  }
+
   @Get()
-  findAll() {
-    return this.groupService.findAll();
+  @ApiOperation({ summary: 'List groups (paginated)' })
+  async findAll(
+    @CurrentProject() project: any,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ): Promise<IPaginatedResponse<GroupDTO>> {
+    return this.groupService.findAll(project.id, page, limit);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.groupService.findOne(+id);
-  }
+  @Post(':groupName/members')
+  @ApiOperation({
+    summary: 'Add members to an existing group',
+    description:
+      'Creates users (if not exist) and adds them to the group in a single transaction',
+  })
+  @ApiResponse({ type: [GroupMemberDTO] })
+  async addMembersToGroup(
+    @Param('groupName') groupName: string,
+    @Body() body: AddGroupMembersDto,
+    @CurrentProject() project: any,
+  ): Promise<GroupMemberDTO[]> {
+    if (!project || !project.id) {
+      throw new BadRequestException('Project context is missing or invalid');
+    }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto) {
-    return this.groupService.update(+id, updateGroupDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.groupService.remove(+id);
+    return this.groupService.addMembersToGroup(
+      groupName,
+      body.members,
+      project.id,
+    );
   }
 }

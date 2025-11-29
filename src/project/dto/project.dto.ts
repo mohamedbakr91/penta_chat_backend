@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ProjectStatus } from '../entities/project.entity';
 
 export class ProjectDTO {
   @ApiProperty({
@@ -14,16 +15,31 @@ export class ProjectDTO {
   key: string;
 
   @ApiProperty({
-    description: 'Integration status of the project',
-    example: true,
+    description: 'Display name of the project',
+    example: 'Internal CRM',
   })
-  integration: boolean;
+  name: string;
 
   @ApiProperty({
-    description: 'First data stored as JSON',
-    example: { someKey: 'someValue' },
+    description: 'Optional logo URL or identifier',
+    example: 'https://cdn.example.com/logo.png',
+    required: false,
   })
-  firstData: any;
+  logo?: string;
+
+  @ApiProperty({
+    description: 'Optional description of the project',
+    example: 'Project used to manage customer relationships.',
+    required: false,
+  })
+  description?: string;
+
+  @ApiProperty({
+    description: 'Current status of the project',
+    enum: ProjectStatus,
+    example: ProjectStatus.ACTIVE,
+  })
+  status: ProjectStatus;
 
   @ApiProperty({
     description: 'The date and time when the project was created',

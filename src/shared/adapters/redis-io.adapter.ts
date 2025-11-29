@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from 'redis';
@@ -8,6 +8,7 @@ export class RedisIoAdapter extends IoAdapter {
   private readonly logger = new Logger(RedisIoAdapter.name);
   private pubClient;
   private adapterConstructor: ReturnType<typeof createAdapter>;
+  private static _instance: RedisIoAdapter | null = null;
 
   async connectToRedis(): Promise<void> {
     try {
@@ -30,6 +31,9 @@ export class RedisIoAdapter extends IoAdapter {
 
       this.logger.log(`Connected to Webosckets Redis Adapter`);
       this.adapterConstructor = createAdapter(pubClient, subClient);
+      this.pubClient = pubClient;
+      // store singleton instance so other parts of app can access the connected client
+      RedisIoAdapter._instance = this;
     } catch (error) {
       this.logger.error(error.message, error.stack);
       throw error;
@@ -49,5 +53,15 @@ export class RedisIoAdapter extends IoAdapter {
       );
     }
     return this.pubClient;
+  }
+
+  static getInstance(): RedisIoAdapter | null {
+    return RedisIoAdapter._instance;
+  }
+
+  static getClientStatic() {
+    const inst = RedisIoAdapter.getInstance();
+    if (!inst) throw new Error('RedisIoAdapter not initialized.');
+    return inst.getClient();
   }
 }

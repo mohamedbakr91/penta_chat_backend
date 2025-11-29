@@ -2,28 +2,37 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsBoolean, IsOptional } from 'class-validator';
 
 export class CreateProjectDto {
-  @ApiProperty({
-    description: 'The unique key of the project',
-    example: 'mkpsaW1#',
-  })
-  @IsNotEmpty()
-  @IsString()
+  // @ApiProperty({
+  //   description: 'The unique key of the project',
+  //   example: 'mkpsaW1#',
+  // })
+  // @IsNotEmpty()
+  // @IsString()
   key: string;
 
   @ApiProperty({
-    description: 'Integration status of the project',
-    example: false,
-    required: false,
+    description: 'The display name of the project',
+    example: 'Internal CRM',
   })
-  @IsOptional()
-  @IsBoolean()
-  integration?: boolean;
+  @IsNotEmpty()
+  @IsString()
+  name: string;
 
   @ApiProperty({
-    description: 'First data stored as JSON',
-    example: { someKey: 'someValue' },
+    description: 'Optional logo URL or identifier',
+    example: 'https://cdn.example.com/logo.png',
     required: false,
   })
   @IsOptional()
-  firstData?: any;
+  @IsString()
+  logo?: string;
+
+  @ApiProperty({
+    description: 'Optional description of the project',
+    example: 'Project used to manage customer relationships.',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

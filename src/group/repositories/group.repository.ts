@@ -2,9 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Transaction } from 'sequelize';
 import { IPaginatedResponse } from 'src/shared/interfaces';
 import { Pagination } from 'src/shared/pagination';
-import { CreateGroupDto } from '../dto/create-group.dto';
-import { UpdateGroupDto } from '../dto/update-group.dto';
-import { GroupDTO } from '../dto/group.dto';
+import { CreateGroupDto } from '../dto/group/create-group.dto';
+import { UpdateGroupDto } from '../dto/group/update-group.dto';
+import { GroupDTO } from '../dto/group/group.dto';
 import { Group } from '../entities/group.entity';
 
 @Injectable()
@@ -15,21 +15,18 @@ export class GroupRepository {
     data: Partial<CreateGroupDto>,
     transaction?: Transaction,
   ): Promise<GroupDTO> {
-    return (
-      await this.model.create(
-        { key: data.key, projectId: data.projectId },
-        { transaction },
-      )
-    ).toJSON();
+    return (await this.model.create(data, { transaction })).toJSON();
   }
 
   async findAll(
     page: number = 1,
     limit: number = 10,
+    projectId?: number,
   ): Promise<IPaginatedResponse<GroupDTO>> {
     const paginate = new Pagination(page, limit);
 
     const { rows: data, count } = await this.model.findAndCountAll({
+      where: projectId ? { projectId } : undefined,
       limit: paginate.getLimit(),
       offset: paginate.getOffset(),
     });
@@ -50,6 +47,18 @@ export class GroupRepository {
     transaction?: Transaction,
   ): Promise<GroupDTO | null> {
     const group = await this.model.findOne({ where: { key }, transaction });
+    return group ? group.toJSON() : null;
+  }
+
+  async findOneByNameAndProjectId(
+    name: string,
+    projectId: number,
+    transaction?: Transaction,
+  ): Promise<GroupDTO | null> {
+    const group = await this.model.findOne({
+      where: { projectId: projectId, name: name },
+      transaction,
+    });
     return group ? group.toJSON() : null;
   }
 

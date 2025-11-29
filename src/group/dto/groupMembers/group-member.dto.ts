@@ -1,8 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GroupRole } from '../entities/group-member.entity';
-import { BelongsTo } from 'sequelize-typescript';
-import { Group } from 'src/group/entities/group.entity';
-import { User } from 'src/user/entities/user.entity';
+import { GroupRole } from '../../entities/group-member.entity';
 
 export class GroupMemberDTO {
   @ApiProperty({
@@ -22,6 +19,17 @@ export class GroupMemberDTO {
     example: 1,
   })
   userId: number;
+  @ApiProperty({
+    description: 'The ID of the last seen message',
+    example: 42,
+  })
+  lastSeenMessageId: number;
+  @ApiProperty({
+    description:
+      'The date and time when the user last saw messages in the group',
+    example: '2024-12-18T10:20:30Z',
+  })
+  lastSeenAt: Date;
 
   @ApiProperty({
     description: 'Role of the user',
@@ -41,9 +49,4 @@ export class GroupMemberDTO {
     example: '2024-12-17T15:30:00Z',
   })
   updatedAt: Date;
-  @BelongsTo(() => Group)
-  group: Group;
-
-  @BelongsTo(() => User)
-  user: User;
 }

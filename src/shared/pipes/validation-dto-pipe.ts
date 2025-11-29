@@ -17,7 +17,11 @@ export class HTTPDTOValidationPipe implements PipeTransform<any> {
       ...value,
     });
 
-    const errors = await validate(object);
+    const errors = await validate(object, {
+      forbidUnknownValues: false,
+      whitelist: true,
+      forbidNonWhitelisted: false,
+    });
 
     if (errors.length > 0) {
       throw new UnprocessableEntityException(getCustomValidationError(errors));

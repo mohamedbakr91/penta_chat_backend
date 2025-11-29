@@ -1,6 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import { Sequelize } from 'sequelize-typescript';
+import { Friendship } from 'src/friendship/entities/friendship.entity';
 import { GlobalConfig } from 'src/global-config/entities/global_config.entity';
+import { GroupMember } from 'src/group/entities/group-member.entity';
+import { Group } from 'src/group/entities/group.entity';
+import { Message } from 'src/message/entities/message.entity';
+import { Project } from 'src/project/entities/project.entity';
+import { User } from 'src/user/entities/user.entity';
 
 export const databaseProviders = [
   {
@@ -23,7 +29,15 @@ export const databaseProviders = [
         },
       });
 
-      sequelize.addModels([GlobalConfig]);
+      sequelize.addModels([
+        GlobalConfig,
+        Project,
+        User,
+        Group,
+        Friendship,
+        GroupMember,
+        Message,
+      ]);
 
       return sequelize;
     },

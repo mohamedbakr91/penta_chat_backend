@@ -6,7 +6,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { DatabaseModule } from 'src/database/database.module';
 import { ProjectModule } from 'src/project/project.module';
 import { GroupModule } from 'src/group/group.module';
-import { GroupMembersModule } from 'src/group-members/group-members.module';
+import { AuthGuard } from './guards/jwt.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { ProjectGuard } from './guards/project.guard';
+import { AuthController } from './auth.controller';
 
 @Global()
 @Module({
@@ -15,10 +18,10 @@ import { GroupMembersModule } from 'src/group-members/group-members.module';
     JwtModule.register({ secret: '$up3r$3cr#wefa$wetA@3t' }),
     DatabaseModule,
     ProjectModule,
-    GroupMembersModule,
+    GroupModule,
   ],
-  controllers: [],
-  providers: [AuthService, AuthHelper],
-  exports: [AuthService, AuthHelper],
+  controllers: [AuthController],
+  providers: [AuthService, AuthHelper, AuthGuard, RolesGuard, ProjectGuard],
+  exports: [AuthService, AuthHelper, AuthGuard, RolesGuard, ProjectGuard],
 })
 export class AuthModule {}

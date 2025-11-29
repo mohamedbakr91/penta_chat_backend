@@ -19,6 +19,14 @@ export enum AttachmentType {
   FILE = 'file',
 }
 
+export enum MessageType {
+  IMAGE = 'image',
+  VIDEO = 'video',
+  STICKER = 'sticker',
+  LOCATION = 'location',
+  TEXT = 'text',
+}
+
 @Table({ tableName: 'messages', timestamps: true })
 export class Message extends Model<Message> {
   @PrimaryKey
@@ -41,6 +49,9 @@ export class Message extends Model<Message> {
   @Column({ allowNull: true })
   content: string;
 
+  @Column
+  messageType: MessageType;
+
   @Column({
     type: 'ENUM',
     values: Object.values(AttachmentType),
@@ -52,6 +63,8 @@ export class Message extends Model<Message> {
   attachmentKey: string;
 
   @BelongsTo(() => Project, 'projectId')
+  project: Project;
+
   @BelongsTo(() => Group, 'groupId')
   group: Group;
 

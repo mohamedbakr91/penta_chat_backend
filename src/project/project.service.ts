@@ -10,6 +10,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectRepository } from './repositories/project.repository';
 import { ProjectDTO } from './dto/project.dto';
 import { Transaction } from 'sequelize';
+import { GeneratorHelper } from 'src/shared/helpers/generator';
 @Injectable()
 export class ProjectService {
   private readonly logger = new Logger(ProjectService.name);
@@ -21,7 +22,12 @@ export class ProjectService {
 
   async create(createProjectDto: CreateProjectDto): Promise<ProjectDTO> {
     try {
-      const project = await this.repository.create(createProjectDto);
+      const projectKey = GeneratorHelper.generateRandomAlphaNumeric(8);
+
+      const project = await this.repository.create({
+        ...createProjectDto,
+        key: projectKey,
+      });
       this.logger.log(`Project created: ${project.id}`);
       return project;
     } catch (error) {

@@ -7,31 +7,40 @@
 // import { QuickRegisterDTO, RegisterDTO } from "./dto/register.dto";
 // import { LoginResponseDTO } from "./response/login-response";
 
-// @Controller("auth")
-// @ApiTags("Authentication Controller")
-// @UsePipes(new ValidationPipe({ transform: true }))
-// export class AuthController {
-//   constructor(
-//     private readonly authService: AuthService,
-//     private readonly userMapper: UserMapper,
-//   ) {}
+import {
+  Body,
+  Controller,
+  Post,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AuthService } from './auth.service';
+import { LoginResponseDTO } from './response/login-response';
+import { LoginDTO } from './dto/login.dto';
 
-//   @ApiResponse({
-//     type: LoginResponseDTO,
-//   })
-//   @Post("login")
-//   async login(@Body() data: LoginDTO) {
-//     const res = await this.authService.login(data);
+@Controller('auth')
+@ApiTags('Authentication Controller')
+@UsePipes(new ValidationPipe({ transform: true }))
+export class AuthController {
+  constructor(
+    private readonly authService: AuthService,
+    // private readonly userMapper: UserMapper,
+  ) {}
 
-//     res.user = await this.userMapper.mapSingle(res.user);
-
-//     return res;
-//   }
+  @ApiResponse({
+    type: LoginResponseDTO,
+  })
+  @Post('login')
+  async login(@Body() data: LoginDTO) {
+    return await this.authService.loginExternal(data);
+  }
+}
 
 //   @ApiResponse({
 //     type: UserDTO,
 //   })
-//   @Post("register")
+//   @Post('register')
 //   async register(@Body() data: RegisterDTO): Promise<UserDTO> {
 //     const user = await this.authService.register(data);
 
@@ -41,10 +50,9 @@
 //   @ApiResponse({
 //     type: LoginResponseDTO,
 //   })
-//   @Post("quick-register")
+//   @Post('quick-register')
 //   async quickRegister(@Body() data: QuickRegisterDTO) {
 //     const user = await this.authService.quickRegister(data);
 
 //     return user;
 //   }
-// }

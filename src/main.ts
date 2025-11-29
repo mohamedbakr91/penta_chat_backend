@@ -11,6 +11,7 @@ import helmet from 'helmet';
 import * as compression from 'compression';
 import { WinstonModule } from 'nest-winston';
 import { RedisIoAdapter } from './shared/adapters/redis-io.adapter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -83,8 +84,28 @@ async function bootstrap() {
 
   const redisIoAdapter = new RedisIoAdapter(app);
   await redisIoAdapter.connectToRedis();
-  app.useWebSocketAdapter(redisIoAdapter);
+  // app.useWebSocketAdapter(redisIoAdapter);
 
+  const config = new DocumentBuilder()
+    .setTitle('Penta_chat')
+    .setDescription('Messages System REST API Documentation')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        in: 'header',
+      },
+
+      'JWT',
+    )
+    .build();
+
+  const document = () => SwaggerModule.createDocument(app, config);
+
+  SwaggerModule.setup('api/docs', app, document, {
+    jsonDocumentUrl: 'docs/json',
+  });
   await app.listen(process.env.PORT || 7000);
 }
 

@@ -9,8 +9,7 @@ import { AuthHelper } from './auth-helper.service';
 import { LoginDTO } from './dto/login.dto';
 import { UserTokenPayload } from './dto/token-payload';
 import { ProjectService } from 'src/project/project.service';
-import { GroupMember } from 'src/group-members/entities/group-member.entity';
-import { GroupMembersService } from 'src/group-members/group-members.service';
+import { GroupMembersService } from 'src/group/group-members.service';
 
 @Injectable()
 export class AuthService {
@@ -26,7 +25,7 @@ export class AuthService {
 
   async loginExternal(dto: LoginDTO) {
     const project = await this.projectService.findOneByKey(dto.projectKey);
-    if (!project || !project.firstData) {
+    if (!project) {
       throw new UnauthorizedException('Invalid secretKey');
     }
 
@@ -58,6 +57,7 @@ export class AuthService {
         id: user.id,
         userName: user.userName,
         avatar: user.avatar,
+        projectId: project.id,
       },
       groups,
     };

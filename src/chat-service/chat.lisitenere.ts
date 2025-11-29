@@ -3,8 +3,9 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { WebsocketService } from 'src/webSocket/webSocket.service';
 import { UserSendMessageToGroupEvent } from './events/internal/group-user-send-message';
 import { WebsocketHelpers } from 'src/webSocket/helpers/websocket-helpers';
-import { UserSendMessageToGroupDTO } from './events/dto/group-user-send-message';
 import { UserJoinToGroupEvent } from './events/internal/group-user-join';
+import { UserJoinedGroupOutgoingEvent } from './events/outgoing/group-user-joined';
+import { UserGroupMessageSentOutgoingEvent } from './events/outgoing/group-message-sent';
 
 @Injectable()
 export class InternalEventListener {
@@ -14,27 +15,44 @@ export class InternalEventListener {
 
   @OnEvent(UserSendMessageToGroupEvent.name)
   async handleUserSendMessageToGroup(payload: UserSendMessageToGroupEvent) {
+    console.log(
+      '🚀 ~ InternalEventListener ~ handleUserSendMessageToGroup ~ payload:',
+      payload,
+    );
     this.logger.log(`Received Event From UserSendMessageToGroupEvent`);
 
-    this.wsService.emitEventToRoom<UserSendMessageToGroupEvent>({
-      event: UserSendMessageToGroupEvent.name,
+    this.wsService.emitEventToRoom<UserGroupMessageSentOutgoingEvent>({
+      event: UserGroupMessageSentOutgoingEvent.event,
       room: WebsocketHelpers.getGroupConnectionRoom(payload.data.groupId),
-      data: payload,
+      data: payload.data,
     });
   }
 
   @OnEvent(UserJoinToGroupEvent.name)
   async handleUserJoinToGroup(payload: UserJoinToGroupEvent) {
-    const { groupId, userId, userName, timestamp } = payload.data;
+    // const { groupId, userId, userName, timestamp } = payload.data;
 
     this.logger.log(
-      `User ${userName} (ID: ${userId}) joined group ${groupId} at ${timestamp}`,
+      `User ${payload.data.userId} (ID: ${payload.data.userId}) joined group ${payload.data.groupId} at ${payload.data.timestamp}`,
     );
 
-    this.wsService.emitEventToRoom<UserJoinToGroupEvent>({
-      event: UserJoinToGroupEvent.name,
-      room: WebsocketHelpers.getGroupConnectionRoom(groupId),
-      data: payload,
+    this.wsService.emitEventToRoom<UserJoinedGroupOutgoingEvent>({
+      event: UserJoinedGroupOutgoingEvent.event,
+      room: WebsocketHelpers.getGroupConnectionRoom(payload.data.groupId),
+      data: payload.data,
     });
   }
 }
+
+// @OnEvent(UserJoinedTopicEvent.name)
+// async handleUserJoinedTopic(payload: UserJoinedTopicEvent) {
+//   this.logger.log(`Received Event From UserJoinedTopicEvent`);
+
+//   this.wsService.emitEventToRoom<UserJoinedTopicOutgoingEvent>({
+//     event: UserJoinedTopicOutgoingEvent.event,
+
+//     room: WebsocketHelpers.getTopicConnectionRoom(payload.data.topicId),
+
+//     data: payload.data,
+//   });
+// }

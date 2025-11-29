@@ -11,6 +11,12 @@ export class GroupDTO {
     description: 'The name of the group',
     example: 'My Group',
   })
+  name: string;
+
+  @ApiProperty({
+    description: 'The name of the group',
+    example: 'M369saZ',
+  })
   key: string;
 
   @ApiProperty({

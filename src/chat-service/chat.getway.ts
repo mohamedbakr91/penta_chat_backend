@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { AuthHelper } from 'src/auth/auth-helper.service';
-import { GroupMembersService } from 'src/group-members/group-members.service';
+import { GroupMembersService } from 'src/group/group-members.service';
 import { WebsocketService } from 'src/webSocket/webSocket.service';
 import { MessageService } from 'src/message/message.service';
 import { Events } from './events/events.dto';
@@ -21,7 +21,7 @@ import { UserSendMessageToGroupEvent } from './events/internal/group-user-send-m
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserJoinToGroupEvent } from './events/internal/group-user-join';
 
-@WebSocketGateway({ namespace: '/chat' })
+@WebSocketGateway()
 @Injectable()
 export class ChatGateway implements OnGatewayInit {
   @WebSocketServer()
@@ -30,12 +30,10 @@ export class ChatGateway implements OnGatewayInit {
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
-
     private readonly authHelper: AuthHelper,
     private readonly messageService: MessageService,
     private readonly websocketService: WebsocketService,
     private readonly groupMembersService: GroupMembersService,
-    private readonly redisIoAdapter: RedisIoAdapter, // Redis adapter injected
   ) {}
 
   afterInit() {
@@ -46,22 +44,32 @@ export class ChatGateway implements OnGatewayInit {
   // -----------------------------
   // 1️⃣ Handle User Connection
   // -----------------------------
+  // private async handleUserConnection(userId: number) {
+  //   const redisClient = RedisIoAdapter.getClientStatic();
+
+  //   // Online status
+  //   await redisClient.set(`user:${userId}:online`, '1');
+  //   await redisClient.expire(`user:${userId}:online`, 30); // TTL 30s
+
+  //   // Broadcast to all that user is online
+  //   this.server.emit('userOnline', { userId });
+  // }
   private async handleUserConnection(userId: number) {
-    const redisClient = this.redisIoAdapter.getClient();
-
-    // Online status
-    await redisClient.set(`user:${userId}:online`, '1');
-    await redisClient.expire(`user:${userId}:online`, 30); // TTL 30s
-
-    // Broadcast to all that user is online
-    this.server.emit('userOnline', { userId });
+    try {
+      const redisClient = RedisIoAdapter.getClientStatic();
+      await redisClient.set(`user:${userId}:online`, '1');
+      await redisClient.expire(`user:${userId}:online`, 30);
+      this.server.emit('userOnline', { userId });
+    } catch (err) {
+      this.logger.error('Redis error', err);
+    }
   }
 
   // -----------------------------
   // 2️⃣ Handle User Disconnection
   // -----------------------------
   private async handleUserDisconnection(userId: number) {
-    const redisClient = this.redisIoAdapter.getClient();
+    const redisClient = RedisIoAdapter.getClientStatic();
 
     await redisClient.del(`user:${userId}:online`);
     await redisClient.set(`user:${userId}:lastSeen`, Date.now());
@@ -82,14 +90,26 @@ export class ChatGateway implements OnGatewayInit {
       const user = await this.authHelper.verifyAuthJWTToken(token);
 
       socket.data = user;
-      //todo:خرجه من كل الروكز؟
 
-      this.websocketService.socketJoinRoom({
-        socket: socket,
-        room: WebsocketHelpers.getUserConnectionRoom(user.userId),
-      });
+      // this.websocketService.socketJoinRoom({
+      //   socket: socket,
+      //   room: WebsocketHelpers.getUserConnectionRoom(user.userId),
+      // });
       await this.handleUserConnection(user.userId);
+
+      const groups = await this.groupMembersService.findGroupsByUserId(
+        user.userId,
+      );
+
+      groups.forEach((group) => {
+        console.log(
+          '🚀 ~ ChatGateway ~ handleConnection ~ group:',
+          group.groupId,
+        );
+        socket.join(WebsocketHelpers.getGroupConnectionRoom(group.groupId));
+      });
     } catch (error) {
+      console.error(error);
       socket.disconnect();
     }
   }
@@ -106,8 +126,7 @@ export class ChatGateway implements OnGatewayInit {
   async handleHeartbeat(@ConnectedSocket() socket: Socket) {
     const userId = socket.data?.userId;
     if (!userId) return;
-
-    const redisClient = this.redisIoAdapter.getClient();
+    const redisClient = RedisIoAdapter.getClientStatic();
     await redisClient.set(`user:${userId}:online`, '1');
     await redisClient.expire(`user:${userId}:online`, 30); // refresh TTL
 
@@ -120,12 +139,19 @@ export class ChatGateway implements OnGatewayInit {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const { groupId, userId } = data;
-      const { projectId, userName } = client.data;
+      const { groupId } = data;
+      const { projectId, userName, userId } = client.data;
+      console.log('userId:', userId, 'groupId:', groupId);
+
       const userInGroup = await this.groupMembersService.userInGroup(
         userId,
-        projectId,
+        groupId,
       );
+      console.log(
+        '🚀 ~ ChatGateway ~ handleJoinGroup ~ userInGroup:',
+        userInGroup,
+      );
+
       if (!userInGroup) return client.emit('error', 'User not in group');
       const roomName = `group_${groupId}`;
       const userInTheRoom = this.websocketService.isSocketInRoom(
@@ -145,7 +171,8 @@ export class ChatGateway implements OnGatewayInit {
       );
       this.logger.log(`User ${userId} joined group ${groupId}`);
     } catch (err) {
-      client.emit('error', err.message);
+      console.error(err);
+      client.emit('socket_error', err.message);
     }
   }
 
@@ -154,25 +181,30 @@ export class ChatGateway implements OnGatewayInit {
     @MessageBody() data: UserSendMessageToGroupDTO,
     @ConnectedSocket() client: Socket,
   ) {
+    console.log('🚀 ~ ChatGateway ~ handleSendMessage ~ data:', data);
     try {
-      const { groupId, content, attachmentKey, attachmentType } = data;
+      const { groupId, content, attachmentKey, attachmentType, messageType } =
+        data;
 
       const { userId } = client.data;
       // const user = await this.authHelper.verifyAuthJWTToken(accessToken);
       // if (!user) return client.emit('error', 'Unauthorized');
 
-      const roomName = `group_${groupId}`;
-
+      const roomName = WebsocketHelpers.getGroupConnectionRoom(groupId);
       if (!this.websocketService.isSocketInRoom(client, roomName)) {
-        return client.emit('error', 'You are not in this group');
+        return client.emit('socket_error', 'You are not in this group');
       }
-
       const newMessage = await this.messageService.create({
-        senderId: client.data.id,
+        senderId: client.data.userId,
         content,
         attachmentKey,
         attachmentType,
+        messageType,
       });
+      console.log(
+        '🚀 ~ ChatGateway ~ handleSendMessage ~ newMessage:',
+        newMessage,
+      );
 
       this.eventEmitter.emit(
         UserSendMessageToGroupEvent.name,
@@ -185,7 +217,8 @@ export class ChatGateway implements OnGatewayInit {
         }),
       );
     } catch (err) {
-      client.emit('error', err.message);
+      console.error(err);
+      client.emit('socket_error', err.message);
     }
   }
 }

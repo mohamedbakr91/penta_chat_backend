@@ -11,6 +11,13 @@ import {
 } from 'sequelize-typescript';
 import { Group } from 'src/group/entities/group.entity';
 
+export enum ProjectStatus {
+  ACTIVE = 'active',
+  PAUSED = 'paused',
+  ARCHIVED = 'archived',
+  DELETED = 'deleted',
+}
+
 @Table({ tableName: 'projects', timestamps: true })
 export class Project extends Model<Project> {
   @PrimaryKey
@@ -22,10 +29,20 @@ export class Project extends Model<Project> {
   key: string;
 
   @Column
-  integration: boolean;
+  name: string;
 
-  @Column(DataType.JSON)
-  firstData: any;
+  @Column({ allowNull: true })
+  logo?: string;
+
+  @Column({ allowNull: true })
+  description?: string;
+
+  @Column({
+    type: DataType.ENUM(...Object.values(ProjectStatus)),
+    allowNull: false,
+    defaultValue: ProjectStatus.ACTIVE,
+  })
+  status: ProjectStatus;
 
   @CreatedAt
   createdAt: Date;
